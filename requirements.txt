@@ -1,4 +1,2 @@
 streamlit
-email
-pandas
-numpy
+Pillow  # If you are using Pillow for image processing
