@@ -1,82 +1,74 @@
+import streamlit as st
 import os
 import smtplib
 from email.message import EmailMessage
-from datetime import datetime
+from typing import List, Tuple
 
-def rename_files(files):
-    """Rename the files based on the number of files provided."""
-    num_files = len(files)
-    renamed_files = []
+# Function to rename files
+def rename_files(files: List[Tuple[str, str]]):
+    for old_name, new_name in files:
+        if os.path.exists(old_name):
+            os.rename(old_name, new_name)
+        else:
+            st.error(f"File not found: {old_name}")
 
-    if num_files == 4:
-        new_names = ['PV.jpg', 'RG.jpg', 'LS.jpg', 'CUST.jpg']
-    elif num_files == 7:
-        new_names = ['PV1.jpg', 'PV2.jpg', 'RG1.jpg', 'RG2.jpg', 'LS1.jpg', 'LS2.jpg', 'CUST.jpg']
-    elif num_files == 10:
-        new_names = ['PV1.jpg', 'PV2.jpg', 'PV3.jpg', 'RG1.jpg', 'RG2.jpg', 'RG3.jpg', 
-                     'LS1.jpg', 'LS2.jpg', 'LS3.jpg', 'CUST.jpg']
-    else:
-        raise ValueError("Unsupported number of files.")
+# Function to send emails
+def send_email(renamed_files: List[str]):
+    sender_email = "your_email@example.com"
+    sender_password = "your_password"
+    recipient_email = "recipient@example.com"
 
-    for old_name, new_name in zip(files, new_names):
-        os.rename(old_name, new_name)
-        renamed_files.append(new_name)
+    # Setup email server
+    server = smtplib.SMTP('smtp.example.com', 587)
+    server.starttls()
+    server.login(sender_email, sender_password)
 
-    return renamed_files
-
-def send_email(renamed_files):
-    """Send emails with the renamed files attached."""
-    # Email settings
-    email_address = 'alex@alphalandscapeslv.com'
-    email_password = 'Monster#12!'
-    smtp_server = 'smtp.office365.com'
-    smtp_port = 587
-
-    # Current date for subject line
-    current_date = datetime.now().strftime("%Y-%m-%d")
-
-    # First email to Accounting (PV, RG, LS)
-    msg_to_accounting = EmailMessage()
-    msg_to_accounting['From'] = email_address
-    msg_to_accounting['To'] = 'Accounting@alphalandscapeslv2.com'
-    msg_to_accounting['CC'] = 'Joey@alphalandscapeslv2.com, MariaO@alphalandscapeslv2.com, Michael@alphalandscapeslv2.com, Michelle@alphalandscapeslv2.com, Myranda@alphalandscapeslv2.com, Samantha@alphalandscapeslv2.com, Tracy@alphalandscapeslv2.com'
-    msg_to_accounting['Subject'] = f'WB {current_date}'
-    msg_to_accounting.set_content('Please find the attached files.')
-
-    # Attach files for Accounting
     for file in renamed_files:
-        if file.startswith(('PV', 'RG', 'LS')):
-            with open(file, 'rb') as f:
-                file_data = f.read()
-                file_name = file
-            msg_to_accounting.add_attachment(file_data, maintype='application', subtype='octet-stream', filename=file_name)
+        msg = EmailMessage()
+        msg.set_content("Attached is the file you requested.")
+        msg['Subject'] = 'File Attachment'
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
 
-    # Second email for CUST
-    msg_to_cust = EmailMessage()
-    msg_to_cust['From'] = email_address
-    msg_to_cust['To'] = 'Accounting@alphalandscapeslv2.com'
-    msg_to_cust['CC'] = 'Darrell@alphalandscapeslv2.com, Joey@alphalandscapeslv2.com, MariaO@alphalandscapeslv2.com, Tracy@alphalandscapeslv2.com, Will@alphalandscapeslv2.com'
-    msg_to_cust['Subject'] = f'WB {current_date}'
-    msg_to_cust.set_content('Please find the attached files.')
+        with open(file, 'rb') as f:
+            file_content = f.read()
+            msg.add_attachment(file_content, maintype='application', subtype='octet-stream', filename=os.path.basename(file))
 
-    # Attach the CUST file
-    for file in renamed_files:
-        if file == 'CUST.jpg':
-            with open(file, 'rb') as f:
-                file_data = f.read()
-                file_name = file
-            msg_to_cust.add_attachment(file_data, maintype='application', subtype='octet-stream', filename=file_name)
+        server.send_message(msg)
+    
+    server.quit()
 
-    # Send emails using SMTP
-    with smtplib.SMTP(smtp_server, smtp_port) as smtp:
-        smtp.starttls()
-        smtp.login(email_address, email_password)
-        smtp.send_message(msg_to_accounting)
-        smtp.send_message(msg_to_cust)
+# Streamlit app
+def main():
+    st.title("File Upload and Rename App")
 
-if __name__ == '__main__':
-    # Example usage
-    # Assume you have a list of image files in the current directory
-    files = ['image1.jpg', 'image2.jpg', 'image3.jpg', 'image4.jpg']  # Replace with your actual file names
-    renamed_files = rename_files(files)
-    send_email(renamed_files)
+    uploaded_files = st.file_uploader("Upload files", accept_multiple_files=True)
+
+    if uploaded_files:
+        save_directory = "./uploaded_files"
+        if not os.path.exists(save_directory):
+            os.makedirs(save_directory)
+        
+        file_paths = []
+        for uploaded_file in uploaded_files:
+            file_path = os.path.join(save_directory, uploaded_file.name)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            file_paths.append(file_path)
+
+        st.write("Files uploaded:")
+        st.write(file_paths)
+
+        # Rename files - example renaming logic
+        renamed_files = [(path, os.path.join(save_directory, "new_" + os.path.basename(path))) for path in file_paths]
+        rename_files(renamed_files)
+
+        st.write("Renamed files:")
+        st.write([new_name for old_name, new_name in renamed_files])
+
+        if st.button("Send Email"):
+            send_email([new_name for old_name, new_name in renamed_files])
+            st.success("Emails sent successfully!")
+
+if __name__ == "__main__":
+    main()
