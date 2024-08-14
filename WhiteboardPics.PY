@@ -37,9 +37,18 @@ def send_email(renamed_files):
     msg['Subject'] = subject
 
     # Recipients
-    recipients_accounting = "Accounting@alphalandscapeslv.com"
-    recipients_cc_accounting = ["Joey@alphalandscapeslv.com", "MariaO@alphalandscapeslv.com", "Michael@alphalandscapeslv.com", "Michelle@alphalandscapeslv.com", "Myranda@alphalandscapeslv.com", "Samantha@alphalandscapeslv.com", "Tracy@alphalandscapeslv.com"]
-    recipients_cc_cust = ["Darrell@alphalandscapeslv.com", "Joey@alphalandscapeslv.com", "MariaO@alphalandscapeslv.com", "Tracy@alphalandscapeslv.com", "Will@alphalandscapeslv.com"]
+    recipients_accounting = "Accounting@alphalandscapeslv2.com"
+    recipients_cc_accounting = [
+        "Joey@alphalandscapeslv2.com", "MariaO@alphalandscapeslv2.com",
+        "Michael@alphalandscapeslv2.com", "Michelle@alphalandscapeslv2.com",
+        "Myranda@alphalandscapeslv2.com", "Samantha@alphalandscapeslv2.com",
+        "Tracy@alphalandscapeslv2.com"
+    ]
+    recipients_cc_cust = [
+        "Darrell@alphalandscapeslv2.com", "Joey@alphalandscapeslv2.com",
+        "MariaO@alphalandscapeslv2.com", "Tracy@alphalandscapeslv2.com",
+        "Will@alphalandscapeslv2.com"
+    ]
 
     # Attach files to the email
     for file, new_filename in renamed_files:
